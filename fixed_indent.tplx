@@ -1,0 +1,9 @@
+((= This line inherits from the built in template that you want to use. =))
+((* extends 'article.tplx' *))
+
+% Markdown mod. Copied from base.tplx. Parindent & parskip added.
+((* block markdowncell scoped *))
+    \setlength{\parindent}{0cm}
+    \setlength{\parskip}{3mm}
+    ((( cell.source | citation2latex | strip_files_prefix | markdown2latex )))
+((* endblock markdowncell *))

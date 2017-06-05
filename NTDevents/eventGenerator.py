@@ -134,12 +134,13 @@ def getTemps(eventType):
     with open('data/output' + eventType + '.csv', 'wb') as g:
         writer = csv.writer(g)
         t0 = time.clock()
+        writer.writerow([0,a,b,c,d,e,f])
         for i in range(timeSteps):
             if i>int((1.0*dur)/(stepSize)):
                 Ecrystal = 0
                 Entd = 0
             a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
-            if i%int(5e4)==0:
+            if i%int(1e4)==0:
                 writer.writerow([i*(5.0/timeSteps),a,b,c,d,e,f])
                 percentage = i*(100.0/timeSteps)
                 if i!=0:

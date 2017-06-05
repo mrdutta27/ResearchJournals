@@ -1,14 +1,16 @@
 import math
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.pylab import *
+import csv
 import time
+import sys
+from decimal import Decimal
+from prettytable import PrettyTable
+
 #define constants
-alpha = [2.3e-8,9.3e-9,1e-11,2.29e-3,4.28e-7,0]
+alpha = [2.7e-8,9.9e-9,1e-11,9.14e3,4.28e-7,0]
 beta = [3,5,2.4,3,2.4,2,1]
-k = [2.34e-3,1.4,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-3]
-#values below from channel 1, CCVR, Vignati
+k = [2.34e-3,1.4,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-5]
+
 s = .015
 R0 = 1.15
 Rl = 6e10
@@ -16,29 +18,22 @@ T0 = 3.35
 gamma = 0.5
 Vb = 5
 Cp = 5e-10
-dur=1e-4
 
+#thermal model equations
 def cond(index,start,end):
-    return ((k[index-1])*((start)**(beta[index-1]) - (end)**(beta[index-1])))
-
+    return ((k[index-1]/(beta[index-1]+1))*((start)**((beta[index-1])+1) - (end)**((beta[index-1])+1)))
 def Rntd(temp):
     return R0*math.exp((T0/temp)**gamma)
-
-def phonon(a,b,c,d,e,f): #add NTD Power
-    return ((Pntd/dur)+cond(1,d,a) + cond(2,b,a) - cond(3,a,s))/(alpha[0]*(a**3))
-
-def electron(a,b,c,d,e,f): #figure out T
+def phonon(a,b,c,d,e,f):
+    return ((Entd/dur)+cond(1,d,a) + cond(2,b,a) - cond(3,a,s))/(alpha[0]*(a**3))
+def electron(a,b,c,d,e,f):
     return ((f**2 - ((Vb*Rntd(s))/(Rl+Rntd(s)))**2)/(Rntd(b)) - cond(2,b,a))/(alpha[1]*b)
-
 def heater(a,b,c,d,e,f):
     return (cond(4,d,c) - cond(5,c,s))/(alpha[2]*c)
-
 def crystal(a,b,c,d,e,f):
-    return ((Pcrystal/dur)-cond(1,d,a) - cond(4,d,c) - cond(6,d,e))/(alpha[3]*(d**3))
-
+    return ((Ecrystal/dur)-cond(1,d,a) - cond(4,d,c) - cond(6,d,e))/(alpha[3]*((d/232.0)**3))
 def teflon(a,b,c,d,e,f):
     return (cond(6,d,e) - cond(7,e,s)) / ((alpha[4]*e) + (alpha[5]*(e**3)))
-
 def feedback (a,b,c,d,e,f):
     return (Vb-(f*((Rl+Rntd(b))/(Rntd(b)))))/(Rl*Cp)
 
@@ -95,71 +90,61 @@ def rK6(a, b, c, d, e, f, fa, fb, fc, fd, fe, ff, hs):
 	return a, b, c, d, e, f
 
 #run algorithm
-ntdEventArray = []
-crystalEventArray = []
-timeSteps = int(9.3e6)
-Pcrystal, Pntd = 0,0
+
+#algorithm parameters
+timeSteps = int(5e7)
+stepSize = 1e-7
+print "Total Time: " + str(stepSize*timeSteps) + " seconds" #Display how many seconds this will simulate
+
+#power input parameters
+Ecrystal, Entd = 0,0
+eventEnergy = (2615.0)*(1.6022e-16) #2615 KeV
+dur = 1e-3
+
+def getConstants():
+    t = PrettyTable(['Name','Value'])
+    t.add_row([ "Capacitances ",""])
+    t.add_row([ "Phonon" , '%.2E' % Decimal(alpha[0]*(s**3))])
+    t.add_row([ "Electron" , '%.2E' % Decimal(alpha[1]*(s))])
+    t.add_row([ "Heater" , '%.2E' % Decimal(alpha[2]*s)])
+    t.add_row([ "Crystal" , '%.2E' % Decimal(alpha[3]*((s/232.0)**3))])
+    t.add_row([ "Teflon" , '%.2E' % Decimal((alpha[4]*s) + (alpha[5]*(s**3)))])
+    t.add_row([ "",""])
+    t.add_row([ "Conductances ",""])
+    t.add_row([ "NTD Glue" ,'%.2E' % Decimal(k[0]*(s**beta[0]))])
+    t.add_row([ "EP Coupling",'%.2E' % Decimal(k[1]*(s**beta[1]))])
+    t.add_row([ "NTD Gold",'%.2E' % Decimal(k[2]*(s**beta[2]))])
+    t.add_row([ "Heater Glue",'%.2E' % Decimal(k[3]*(s**beta[3]))])
+    t.add_row([ "Heater Gold",'%.2E' % Decimal(k[4]*(s**beta[4]))])
+    t.add_row([ "Crystal-Teflon",'%.2E' % Decimal(k[5]*(s**beta[5]))])
+    t.add_row([ "Teflon-Sink",'%.2E' % Decimal(k[6]*(s**beta[6]))])
+    t.align = "r"
+    print t
 
 def getTemps(eventType):
-    global Pcrystal
-    global Pntd
-    global timeSteps
+    global Ecrystal, Entd, timeSteps, eventEnergy,stepSize
     TempArray = []
     if eventType == "ntd":
-        Pcrystal = 0
-        Pntd = 4.80653e-13
+        Ecrystal = 0
+        Entd = eventEnergy
     else:
-        Pcrystal = 4.80653e-13
-        Pntd = 0
-    a,b,c,d,e,f,hs = s,s,s,s,s,(Vb*Rntd(s))/(Rl+Rntd(s)),1e-8
-    start = time.time()
-    for i in range(timeSteps):
-        if i>timeSteps/5000:
-            Pcrystal=0
-            Pntd = 0
-        a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
-        TempArray.append([a,b,c,d,e,f])
-    print eventType
-    #print a,b,c,d,e
-    end = time.time()
-    print "Duration: " + str(end-start)
-    TempArray = np.array(TempArray)
-    return TempArray
-
-ntdEventArray = getTemps("ntd")
-crystalEventArray = getTemps("crystal")
-
-t = linspace(0,5,timeSteps)
-
-plt.plot(t,crystalEventArray[:,1])
-plt.xlabel('Time (s)')
-plt.ylabel('Voltage (Arb. Units)')
-plt.title('Crystal Event Pulse')
-crystalFig = plt.gcf()
-crystalFig.set_size_inches(6,4)
-crystalFig.savefig('crystal_event.png',dpi=150)
-amplitude = np.amax(crystalEventArray[:,1])-s
-maxTemp = np.argmax(crystalEventArray[:,1])
-riseTime =  (5.0/(timeSteps))*len(zip(*np.where(np.logical_and((crystalEventArray[:maxTemp,1]-s)>=0.1*(amplitude),(crystalEventArray[:maxTemp,1]-s)<=0.9*(amplitude)))))
-decayTime =  (5.0/(timeSteps))*len(zip(*np.where(np.logical_and((crystalEventArray[maxTemp:,1]-s)>=0.3*(amplitude),(crystalEventArray[maxTemp:,1]-s)<=0.9*(amplitude)))))
-
-print "Amplitude: " + str(amplitude)
-print "Rise Time: " + str(riseTime)
-print "Decay Time: " + str(decayTime)
-print "DecayTime/RiseTime: " + str(decayTime/riseTime)
-
-plt.plot(t,ntdEventArray[:,1])
-plt.xlabel('Time (s)')
-plt.ylabel('Voltage (Arb. Units)')
-plt.title('NTD Event Pulse')
-ntdFig = plt.gcf()
-ntdFig.set_size_inches(6,4)
-ntdFig.savefig('ntd_event.png',dpi=150)
-amplitude = np.amax(ntdEventArray[:,1])-s
-maxTemp = np.argmax(ntdEventArray[:,1])
-riseTime =  (5.0/(timeSteps))*len(zip(*np.where(np.logical_and((ntdEventArray[:maxTemp,1]-s)>=0.1*(amplitude),(ntdEventArray[:maxTemp,1]-s)<=0.9*(amplitude)))))
-decayTime =  (5.0/(timeSteps))*len(zip(*np.where(np.logical_and((ntdEventArray[maxTemp:,1]-s)>=0.3*(amplitude),(ntdEventArray[maxTemp:,1]-s)<=0.9*(amplitude)))))
-print "Amplitude: " + str(amplitude)
-print "Rise Time: " + str(riseTime)
-print "Decay Time: " + str(decayTime)
-print "DecayTime/RiseTime: " + str(decayTime/riseTime)
+        Ecrystal = eventEnergy
+        Entd = 0
+    a,b,c,d,e,f,hs = s,s,s,s,s,(Vb*Rntd(s))/(Rl+Rntd(s)),stepSize
+    with open('data/output' + eventType + '.csv', 'wb') as g:
+        writer = csv.writer(g)
+        t0 = time.clock()
+        for i in range(timeSteps):
+            if i>int((1.0*dur)/(stepSize)):
+                Ecrystal = 0
+                Entd = 0
+            a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
+            if i%int(5e4)==0:
+                writer.writerow([i*(5.0/timeSteps),a,b,c,d,e,f])
+                percentage = i*(100.0/timeSteps)
+                if i!=0:
+                    sys.stdout.write(str(percentage)+"% | ("+ "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((100-(percentage))/percentage),60) +")\r")
+                    sys.stdout.flush()
+            #TempArray.append([a,b,c,d,e,f])
+    #TempArray = np.asarray(TempArray)
+    #return TempArray

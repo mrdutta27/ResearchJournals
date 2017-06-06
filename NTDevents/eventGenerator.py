@@ -9,7 +9,7 @@ from prettytable import PrettyTable
 #define constants
 alpha = [2.7e-8,9.9e-9,1e-11,9.14e3,4.28e-7,0]
 beta = [3,5,2.4,3,2.4,2,1]
-k = [2.34e-3,1.4,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-5]
+k = [2.34e-3,1.4,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-3]
 
 s = .015
 R0 = 1.15
@@ -92,8 +92,8 @@ def rK6(a, b, c, d, e, f, fa, fb, fc, fd, fe, ff, hs):
 #run algorithm
 
 #algorithm parameters
-timeSteps = int(5e7)
-stepSize = 1e-7
+timeSteps = int(5e6)
+stepSize = 1e-6
 print "Total Time: " + str(stepSize*timeSteps) + " seconds" #Display how many seconds this will simulate
 
 #power input parameters

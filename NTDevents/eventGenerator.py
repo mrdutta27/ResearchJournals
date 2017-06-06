@@ -8,8 +8,8 @@ from prettytable import PrettyTable
 
 #define constants
 alpha = [2.7e-8,9.9e-9,1e-11,9.14e3,4.28e-7,0]
-beta = [3,5,2.4,3,2.4,2,1]
-k = [2.34e-3,1.4,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-3]
+beta = [3,4.37,2.4,3,2.4,2,1]
+k = [2.34e-3,0.7,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-7]
 
 s = .015
 R0 = 1.15
@@ -146,6 +146,6 @@ def getTemps(eventType):
                 if i!=0:
                     sys.stdout.write(str(percentage)+"% | ("+ "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((100-(percentage))/percentage),60) +")\r")
                     sys.stdout.flush()
-            #TempArray.append([a,b,c,d,e,f])
+    #TempArray.append([a,b,c,d,e,f])
     #TempArray = np.asarray(TempArray)
     #return TempArray

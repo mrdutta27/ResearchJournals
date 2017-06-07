@@ -132,20 +132,21 @@ def getTemps(eventType):
         Entd = 0
     a,b,c,d,e,f,hs = s,s,s,s,s,(Vb*Rntd(s))/(Rl+Rntd(s)),stepSize
     with open('data/output' + eventType + '.csv', 'wb') as g:
-        writer = csv.writer(g)
-        t0 = time.clock()
-        writer.writerow([0,a,b,c,d,e,f])
-        for i in range(timeSteps):
-            if i>int((1.0*dur)/(stepSize)):
+        writer = csv.writer(g)                
+        t0 = time.clock() 
+  
+        for i in range(int(timeSteps+1e3)):
+            
+            if i>int((1.0*dur)/(stepSize)+1e6):
                 Ecrystal = 0
                 Entd = 0
-            a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
-            if i%int(1e4)==0:
+                
+            if i%int(1/dur)==0:
                 writer.writerow([i*(5.0/timeSteps),a,b,c,d,e,f])
-                percentage = i*(100.0/timeSteps)
-                if i!=0:
-                    sys.stdout.write(str(percentage)+"% | ("+ "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((100-(percentage))/percentage),60) +")\r")
-                    sys.stdout.flush()
-    #TempArray.append([a,b,c,d,e,f])
-    #TempArray = np.asarray(TempArray)
-    #return TempArray
+                
+            if i>1e6:
+                a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
+                if i%int(1/dur)==0:
+                        percentage = i*(100.0/timeSteps)
+                        sys.stdout.write(str(percentage)+"% | ("+ "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((100-(percentage-20))/(percentage-20)),60) +")\r")
+                        sys.stdout.flush()

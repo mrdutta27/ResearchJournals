@@ -9,7 +9,7 @@ from prettytable import PrettyTable
 #define constants
 alpha = [2.7e-8,9.9e-9,1e-11,9.14e3,4.28e-7,0]
 beta = [3,4.37,2.4,3,2.4,2,1]
-k = [2.34e-3,0.7,3.2e-5,1.3e-3,3.2e-5,4e-5,1.25e-7]
+k = [2.34e-3,0.7,3.2e-5,1.3e-3,3.2e-5,2.5e-5,4e-7]
 
 s = .015
 R0 = 1.15
@@ -137,16 +137,16 @@ def getTemps(eventType):
   
         for i in range(int(timeSteps+1e3)):
             
-            if i>int((1.0*dur)/(stepSize)+1e6):
+            if i>int((1.0*dur)/(stepSize)+(timeSteps/5)):
                 Ecrystal = 0
                 Entd = 0
                 
-            if i%int(1/dur)==0:
+            if i%int(dur/stepSize)==0:
                 writer.writerow([i*(5.0/timeSteps),a,b,c,d,e,f])
                 
-            if i>1e6:
+            if i>(timeSteps/5):
                 a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
-                if i%int(1/dur)==0:
+                if i%int(dur/stepSize)==0:
                         percentage = i*(100.0/timeSteps)
-                        sys.stdout.write(str(percentage)+"% | ("+ "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((100-(percentage-20))/(percentage-20)),60) +")\r")
+                        sys.stdout.write(str(percentage)+"% | ("+ "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((80-(percentage-20))/(percentage-20)),60) +")\r")
                         sys.stdout.flush()

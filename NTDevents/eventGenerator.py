@@ -27,7 +27,7 @@ def Rntd(temp):
 def phonon(a,b,c,d,e,f):
     return ((Entd/dur)+cond(1,d,a) + cond(2,b,a) - cond(3,a,s))/(alpha[0]*(a**3))
 def electron(a,b,c,d,e,f):
-    return ((f**2 - ((Vb*Rntd(s))/(Rl+Rntd(s)))**2)/(Rntd(b)) - cond(2,b,a))/(alpha[1]*b)
+    return ((Eelectron/dur) + (f**2 - ((Vb*Rntd(s))/(Rl+Rntd(s)))**2)/(Rntd(b)) - cond(2,b,a))/(alpha[1]*b)
 def heater(a,b,c,d,e,f):
     return ((Eheater/dur)+cond(4,d,c) - cond(5,c,s))/(alpha[2]*c)
 def crystal(a,b,c,d,e,f):
@@ -97,7 +97,7 @@ stepSize = 1e-6
 print "Total Time: " + str(stepSize*timeSteps) + " seconds" #Display how many seconds this will simulate
 
 #power input parameters
-Ecrystal, Entd, Eheater = 0,0,0
+Ecrystal, Entd, Eheater, Eelectron = 0,0,0,0
 eventEnergy = (2615.0)*(1.6022e-16) #2615 KeV
 dur = 1e-3
 
@@ -122,7 +122,7 @@ def getConstants():
     print t
 
 def getTemps(eventType):
-    global Ecrystal, Entd, Eheater, timeSteps, eventEnergy,stepSize
+    global Ecrystal, Entd, Eheater, Eelectron, timeSteps, eventEnergy,stepSize
     TempArray = []
     if eventType == "ntd":
         Entd = eventEnergy
@@ -130,6 +130,9 @@ def getTemps(eventType):
     elif eventType == "heater":
         Eheater = eventEnergy
         print "Heater Event"
+    elif eventType == "electron":
+        Eelectron = eventEnergy
+        print "Electron Event"
     else:
         Ecrystal = eventEnergy
         print "Crystal Event"
@@ -144,6 +147,7 @@ def getTemps(eventType):
                 Ecrystal = 0
                 Entd = 0
                 Eheater = 0
+                Eelectron = 0
             if i%int(dur/stepSize)==0:
                 writer.writerow([i*(5.0/timeSteps),a,b,c,d,e,f])
                 

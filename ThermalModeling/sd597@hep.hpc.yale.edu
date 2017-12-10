@@ -1,6 +1,9 @@
 import math
 import numpy as np
-from tqdm import tqdm
+import time
+import sys
+from decimal import Decimal
+from prettytable import PrettyTable
 
 def getTemps(alpha, beta, k, s, R0, Rl, T0, gamma, Vb, Cp):
 
@@ -112,7 +115,9 @@ def getTemps(alpha, beta, k, s, R0, Rl, T0, gamma, Vb, Cp):
 
     a_data, b_data, c_data, d_data, e_data, f_data, r_data = [],[],[],[],[],[],[]
 
-    for i in tqdm(range(int((burnin_t+active_t)/stepSize)),ascii=True):
+    t0 = time.clock()
+
+    for i in range(int((burnin_t+active_t)/stepSize)):
 
         #turn off power deposition
         if (i<int((burnin_t + active_t/5 + dur)/stepSize) and i>int((burnin_t + active_t/5)/stepSize)):
@@ -131,6 +136,9 @@ def getTemps(alpha, beta, k, s, R0, Rl, T0, gamma, Vb, Cp):
             r_data.append(Rntd(b))
 
         a, b, c, d, e, f = rK6(a, b, c, d, e, f, phonon, electron, heater, crystal, teflon, feedback, hs)
+        if i%int(dur/stepSize)==0:
+            percentage = i*(100.0/((burnin_t+active_t)/stepSize))
+            sys.stdout.write("%.2f" % percentage +"% | (" + "%02d:%02d" % divmod(time.clock()-t0,60) + "|" + "%02d:%02d" % divmod((time.clock()-t0)*((100-(percentage))/(percentage+1)),60)+") \r")
 
     data = {
         "a": a_data,
